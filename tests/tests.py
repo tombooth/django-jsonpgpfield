@@ -1,7 +1,7 @@
 from django.db import models
 from django.test import TestCase
 
-from .fields import JSONPGPField
+from jsonpgpfield.fields import JSONPGPField, NoKeyError
 
 
 PUBLIC_KEY = '''
@@ -103,7 +103,12 @@ VBZwZQCDp/FED08W0fTuz39I7M/bqXkwM5PxNUC87YGnVp3pr0/9qxyU
 
 
 class TestModel(models.Model):
-    secure_json = JSONPGPField(PUBLIC_KEY, PRIVATE_KEY)
+    secure_json = JSONPGPField(
+        public_key=PUBLIC_KEY, private_key=PRIVATE_KEY)
+
+
+class NoPublicKeyModel(models.Model):
+    secure_json = JSONPGPField(private_key=PRIVATE_KEY)
 
 
 class JSONPGPFieldTest(TestCase):
@@ -114,3 +119,26 @@ class JSONPGPFieldTest(TestCase):
 
         self.assertEqual(field.public_key, PUBLIC_KEY)
         self.assertEqual(field.private_key, PRIVATE_KEY)
+
+    def test_storing_value(self):
+        model = TestModel()
+        model.secure_json = {
+            'foo': 'bar',
+        }
+        model.save()
+
+        self.assertEqual(model.secure_json['foo'], 'bar')
+
+    def test_storing_value_with_no_public_raises(self):
+        model = NoPublicKeyModel()
+        model.secure_json = {
+            'foo': 'bar',
+        }
+
+        raised = False
+        try:
+            model.save()
+        except NoKeyError:
+            raised = True
+
+        self.assertTrue(raised)

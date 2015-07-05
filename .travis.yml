@@ -15,7 +15,7 @@ before_script:
   - psql -c 'create database jsonpgpfield;' -U postgres
 
 install:
-  - pip install django==1.8.2 psycopg2==2.5.4
+  - pip install django==1.8.2 psycopg2==2.5.4 six==1.9.0
 
 script: python setup.py test
 

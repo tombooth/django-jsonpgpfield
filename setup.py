@@ -42,13 +42,13 @@ class TestCommand(Command):
         from django.conf import settings
         settings.configure(
             DATABASES=load_databases_from_url(os.environ['DATABASE_URL']),
-            INSTALLED_APPS=('jsonpgpfield',))
+            INSTALLED_APPS=('jsonpgpfield','tests',))
 
         from django.core.management import call_command
         import django
 
         django.setup()
-        call_command('test', 'jsonpgpfield')
+        call_command('test', 'tests')
 
 setup(name='jsonpgpfield',
     version='0.1.0',
@@ -64,6 +64,7 @@ setup(name='jsonpgpfield',
     tests_require=[
         'Django >= 1.8.0',
         'psycopg2 >= 2.5.4',
+        'six = 1.9.0',
     ],
     cmdclass={'test': TestCommand},
     classifiers=[
