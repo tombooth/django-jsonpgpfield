@@ -8,6 +8,19 @@ class NoKeyError(Exception if six.PY3 else StandardError):
     pass
 
 
+class PGPCol(models.expressions.Col):
+    def __init__(self, key, alias, target, output_field):
+        super(PGPCol, self).__init__(alias, target, output_field)
+        self.key = key
+
+    def as_sql(self, compiler, connection):
+        field, _ = super(PGPCol, self).as_sql(compiler, connection)
+        if self.key:
+            return "pgp_pub_decrypt({}, dearmor('{}'))".format(field, self.key), []
+        else:
+            return "NULL", []
+
+
 class JSONPGPField(models.Field):
 
     description = "JSON stored encrypted with asymetric PGP"
@@ -30,3 +43,17 @@ class JSONPGPField(models.Field):
             raise NoKeyError('No public key to encrypt data')
 
         return "pgp_pub_encrypt(%s, dearmor('{}'))".format(self.public_key)
+
+    def get_col(self, *args, **kwargs):
+        col = super(JSONPGPField, self).get_col(*args, **kwargs)
+        return PGPCol(self.private_key, col.alias, col.target, col.output_field)
+
+    def from_db_value(self, value, expression, connection, context):
+        if value is None:
+            return value
+        return json.loads(value)
+
+    def to_python(self, value):
+        if value is None:
+            return value
+        return json.loads(value)

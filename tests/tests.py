@@ -111,6 +111,10 @@ class NoPublicKeyModel(models.Model):
     secure_json = JSONPGPField(private_key=PRIVATE_KEY)
 
 
+class NoPrivateKeyModel(models.Model):
+    secure_json = JSONPGPField(public_key=PUBLIC_KEY)
+
+
 class JSONPGPFieldTest(TestCase):
 
     def test_keys_stored(self):
@@ -142,3 +146,20 @@ class JSONPGPFieldTest(TestCase):
             raised = True
 
         self.assertTrue(raised)
+
+    def test_store_and_retrieve(self):
+        model = TestModel.objects.create(secure_json={
+            'foo': 'bar',
+        })
+        ret_model = TestModel.objects.get(id=model.id)
+
+        self.assertEqual(ret_model.secure_json['foo'], 'bar')
+
+    def test_retrieve_with_no_private_returns_None(self):
+        model = NoPrivateKeyModel.objects.create(secure_json={
+            'foo': 'bar',
+        })
+
+        ret_model = NoPrivateKeyModel.objects.get(id=model.id)
+
+        self.assertEqual(ret_model.secure_json, None)
